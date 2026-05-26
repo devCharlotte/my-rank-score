@@ -3,50 +3,62 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="My Rank Calculator and My Score GPA Calculator" />
+  <meta name="description" content="My Rank Calculator and My Score" />
   <title>My Rank Calculator</title>
   <link rel="stylesheet" href="shared.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="mygame-soft">
   <nav class="mygame-topnav" aria-label="page navigation">
-    <a class="mygame-home" href="#top">← my calculator</a>
-    <span class="mygame-date">Rank Created Dec 31, 2024 · Score Created Mar 21, 2025</span>
+    <a class="mygame-home" href="#rank">← my calculator</a>
+    <span class="mygame-date" aria-hidden="true">&nbsp;</span>
   </nav>
 
-  <main id="top" class="mygame-page calculator-page">
+  <main class="mygame-page calculator-page">
     <section class="hero" aria-labelledby="page-title">
       <div class="mygame-card hero-main">
         <div class="eyebrow">my calculator</div>
-        <h1 id="page-title">My Rank Calculator</h1>
-        <p class="subtitle">
-          석차 계산기를 메인으로 유지하고, My Score 학점 계산기를 같은 GitHub Pages 레포지토리 안에 통합했습니다.
-        </p>
+        <h1 id="page-title">my calculator</h1>
+        <p class="subtitle">원하는 계산기를 고르면 각 기능 페이지로 이동합니다.</p>
         <div class="hero-actions" aria-label="calculator shortcuts">
-          <a class="soft-button" href="#rank-calculator">Rank Calculator</a>
-          <a class="soft-button secondary" href="#score-calculator">My Score</a>
+          <a class="soft-button" href="#rank" data-route="rank">Rank Calculator</a>
+          <a class="soft-button secondary" href="#score-calculator" data-route="score">My Score</a>
         </div>
       </div>
 
       <aside class="mygame-card side-note">
-        <div>
-          <div class="label">main tool</div>
-          <div class="value">석차와 학점을<br>한 페이지에서 계산</div>
-        </div>
-        <div class="date-stack" aria-label="created dates">
-          <span>My Rank Calculator · Created Dec 31, 2024</span>
-          <span>My Score · Created Mar 21, 2025</span>
-        </div>
+        <div class="value">석차 계산기를 중심으로<br>학점 계산까지 함께 정리</div>
+        <div class="label">Rank Calculator는 기본 화면으로 유지하고<br>My Score는 같은 레포지토리 안에서 연결됩니다.</div>
       </aside>
     </section>
 
-    <section class="tool-grid" aria-label="calculator tools">
-      <article id="rank-calculator" class="mygame-card tool-card rank-card">
+    <section class="calculator-grid" aria-label="calculator list">
+      <a class="mygame-card calculator-link" href="#rank" data-route="rank">
+        <div>
+          <div class="icon">🏆</div>
+          <h2 class="calculator-title">My Rank Calculator</h2>
+          <p class="calculator-desc">원점수, 평균, 표준편차, 학생 수를 이용해 예상 석차를 계산합니다.</p>
+        </div>
+        <div class="created">Created Dec 31, 2024</div>
+      </a>
+
+      <a class="mygame-card calculator-link" href="#score-calculator" data-route="score">
+        <div>
+          <div class="icon">📚</div>
+          <h2 class="calculator-title">My Score</h2>
+          <p class="calculator-desc">과목별 이수학점과 등급을 입력해 전공별 평균 학점과 종합 GPA를 계산합니다.</p>
+        </div>
+        <div class="created">Created Mar 21, 2025</div>
+      </a>
+    </section>
+
+    <section id="rank" class="view-section is-active" data-view="rank" aria-labelledby="rank-title">
+      <article class="mygame-card tool-card rank-card">
         <header class="tool-header">
           <div>
             <div class="icon">🏆</div>
-            <h2>My Rank Calculator</h2>
-            <p>원점수, 평균, 표준편차, 학생 수를 이용해 정규분포 기반 예상 석차를 계산합니다.</p>
+            <h2 id="rank-title">My Rank Calculator</h2>
+            <p>원점수, 과목 평균, 표준편차, 전체 학생 수를 입력하면 정규분포 기반 예상 석차를 계산합니다.</p>
           </div>
           <div class="created">Created Dec 31, 2024</div>
         </header>
@@ -79,13 +91,15 @@
           값을 입력하면 예상 석차가 여기에 표시됩니다.
         </div>
       </article>
+    </section>
 
-      <article id="score-calculator" class="mygame-card tool-card score-card">
+    <section id="score-calculator" class="view-section" data-view="score" aria-labelledby="score-title">
+      <article class="mygame-card tool-card score-card">
         <header class="tool-header">
           <div>
             <div class="icon">📚</div>
-            <h2>My Score</h2>
-            <p>과목별 이수학점과 등급을 입력하면 전공, 복수전공, 교양, 종합 평균 학점을 계산합니다.</p>
+            <h2 id="score-title">My Score</h2>
+            <p>과목별 이수학점과 등급을 입력하면 주전공, 복수전공, 교양, 종합 평균 학점을 계산합니다.</p>
           </div>
           <div class="created">Created Mar 21, 2025</div>
         </header>
@@ -125,6 +139,8 @@
             <strong id="overallGpa">-</strong>
           </div>
         </div>
+
+        <div id="scoreMessage" class="score-message" aria-live="polite"></div>
       </article>
     </section>
   </main>

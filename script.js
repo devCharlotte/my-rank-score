@@ -14,7 +14,8 @@ const DEFAULT_SCORE_ROWS = [
   { category: 'major', subject: '', credit: '', grade: '' },
 ];
 
-const $ = (selector) => document.querySelector(selector);
+const $ = (selector, root = document) => root.querySelector(selector);
+const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
 
 function toFiniteNumber(value) {
   const number = Number(value);
@@ -37,10 +38,12 @@ function erf(x) {
   const a4 = -1.453152027;
   const a5 = 1.061405429;
   const p = 0.3275911;
+
   const sign = x < 0 ? -1 : 1;
   const absoluteX = Math.abs(x);
   const t = 1 / (1 + p * absoluteX);
-  const y = 1 - (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-absoluteX * absoluteX);
+  const y = 1 - (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-absoluteX * absoluteX));
+
   return sign * y;
 }
 
@@ -56,6 +59,41 @@ function setResultMessage(element, message, isError = false) {
   element.appendChild(wrapper);
 }
 
+function setScoreMessage(message = '', isError = false) {
+  const messageBox = $('#scoreMessage');
+  if (!messageBox) return;
+  messageBox.className = isError ? 'score-message error-text' : 'score-message';
+  messageBox.textContent = message;
+}
+
+function setActiveRoute(route) {
+  const normalizedRoute = route === 'score' ? 'score' : 'rank';
+
+  $$('[data-view]').forEach((section) => {
+    section.classList.toggle('is-active', section.dataset.view === normalizedRoute);
+  });
+
+  $$('[data-route]').forEach((link) => {
+    link.classList.toggle('is-selected', link.dataset.route === normalizedRoute);
+  });
+}
+
+function routeFromHash() {
+  const hash = window.location.hash.replace('#', '').trim().toLowerCase();
+  if (hash === 'score' || hash === 'score-calculator' || hash === 'my-score') return 'score';
+  return 'rank';
+}
+
+function applyRoute({ shouldScroll = false } = {}) {
+  const route = routeFromHash();
+  setActiveRoute(route);
+
+  if (shouldScroll) {
+    const target = route === 'score' ? $('#score-calculator') : $('#rank');
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
 function renderRankResult({ score, average, standardDeviation, totalStudents }) {
   const result = $('#rankResult');
   const zScore = (score - average) / standardDeviation;
@@ -66,7 +104,11 @@ function renderRankResult({ score, average, standardDeviation, totalStudents }) 
   result.replaceChildren();
 
   const main = document.createElement('div');
-  main.innerHTML = `전체 ${totalStudents.toLocaleString('ko-KR')}명 중 <strong>${estimatedRank.toLocaleString('ko-KR')}등</strong>으로 추정됩니다.`;
+  main.append('전체 ', totalStudents.toLocaleString('ko-KR'), '명 중 ');
+
+  const rank = document.createElement('strong');
+  rank.textContent = `${estimatedRank.toLocaleString('ko-KR')}등`;
+  main.append(rank, '으로 추정됩니다.');
 
   const detail = document.createElement('span');
   detail.className = 'result-detail';
@@ -77,15 +119,19 @@ function renderRankResult({ score, average, standardDeviation, totalStudents }) 
 
 function getRankFormData() {
   return {
-    score: $('#score').value,
-    average: $('#average').value,
-    standardDeviation: $('#standardDeviation').value,
-    totalStudents: $('#totalStudents').value,
+    score: $('#score')?.value ?? '',
+    average: $('#average')?.value ?? '',
+    standardDeviation: $('#standardDeviation')?.value ?? '',
+    totalStudents: $('#totalStudents')?.value ?? '',
   };
 }
 
 function saveRankData() {
-  localStorage.setItem(STORAGE_KEYS.rank, JSON.stringify(getRankFormData()));
+  try {
+    localStorage.setItem(STORAGE_KEYS.rank, JSON.stringify(getRankFormData()));
+  } catch {
+    // localStorage가 막힌 환경에서는 저장만 생략합니다.
+  }
 }
 
 function loadRankData() {
@@ -103,6 +149,7 @@ function loadRankData() {
 
 function handleRankSubmit(event) {
   event.preventDefault();
+
   const result = $('#rankResult');
   const score = toFiniteNumber($('#score').value);
   const average = toFiniteNumber($('#average').value);
@@ -130,7 +177,11 @@ function handleRankSubmit(event) {
 
 function clearRankData() {
   $('#rankForm').reset();
-  localStorage.removeItem(STORAGE_KEYS.rank);
+  try {
+    localStorage.removeItem(STORAGE_KEYS.rank);
+  } catch {
+    // ignore
+  }
   setResultMessage($('#rankResult'), '값을 입력하면 예상 석차가 여기에 표시됩니다.');
 }
 
@@ -154,14 +205,21 @@ function createInput({ type, className, placeholder, value, min, max, step }) {
   return input;
 }
 
+function normalizeCategory(value) {
+  if (value === 'doubleMajor') return 'double';
+  if (value === 'general') return 'liberal';
+  return ['major', 'double', 'liberal'].includes(value) ? value : 'major';
+}
+
 function createScoreRow(rowData = {}) {
   const row = document.createElement('div');
   row.className = 'score-row';
 
+  const selectedCategory = normalizeCategory(rowData.category || rowData.cat || 'major');
   const category = document.createElement('select');
   category.className = 'category';
   CATEGORY_OPTIONS.forEach(({ value, label }) => {
-    category.appendChild(createOption(value, label, rowData.category || rowData.cat || 'major'));
+    category.appendChild(createOption(value, label, selectedCategory));
   });
 
   const subject = createInput({
@@ -175,7 +233,7 @@ function createScoreRow(rowData = {}) {
     type: 'number',
     className: 'credit',
     placeholder: '학점',
-    value: rowData.credit || '',
+    value: rowData.credit ?? '',
     min: '0',
     max: '30',
     step: '0.5',
@@ -185,7 +243,7 @@ function createScoreRow(rowData = {}) {
     type: 'number',
     className: 'grade',
     placeholder: '등급',
-    value: rowData.grade || '',
+    value: rowData.grade ?? '',
     min: '0',
     max: '4.5',
     step: '0.01',
@@ -198,15 +256,17 @@ function createScoreRow(rowData = {}) {
   removeButton.textContent = '×';
   removeButton.addEventListener('click', () => {
     row.remove();
-    if (!$('#scoreRows').children.length) addScoreRow();
+    if (!$('#scoreRows').children.length) addScoreRow({ skipSave: true });
     saveScoreRows();
-    calculateGpa();
+    calculateGpa({ silent: true });
   });
 
   [category, subject, credit, grade].forEach((field) => {
-    field.addEventListener('input', () => {
-      saveScoreRows();
-      calculateGpa({ silent: true });
+    ['input', 'change'].forEach((eventName) => {
+      field.addEventListener(eventName, () => {
+        saveScoreRows();
+        calculateGpa({ silent: true });
+      });
     });
   });
 
@@ -215,16 +275,20 @@ function createScoreRow(rowData = {}) {
 }
 
 function getScoreRows() {
-  return Array.from(document.querySelectorAll('.score-row')).map((row) => ({
-    category: row.querySelector('.category').value,
-    subject: row.querySelector('.subject').value.trim(),
-    credit: row.querySelector('.credit').value,
-    grade: row.querySelector('.grade').value,
+  return $$('.score-row').map((row) => ({
+    category: $('.category', row)?.value ?? 'major',
+    subject: $('.subject', row)?.value.trim() ?? '',
+    credit: $('.credit', row)?.value ?? '',
+    grade: $('.grade', row)?.value ?? '',
   }));
 }
 
 function saveScoreRows() {
-  localStorage.setItem(STORAGE_KEYS.score, JSON.stringify(getScoreRows()));
+  try {
+    localStorage.setItem(STORAGE_KEYS.score, JSON.stringify(getScoreRows()));
+  } catch {
+    // localStorage가 막힌 환경에서는 저장만 생략합니다.
+  }
 }
 
 function parseSavedScoreRows() {
@@ -235,27 +299,39 @@ function parseSavedScoreRows() {
     const legacyRows = JSON.parse(localStorage.getItem(STORAGE_KEYS.legacyScore) || 'null');
     if (Array.isArray(legacyRows) && legacyRows.length > 0) {
       return legacyRows.map((row) => ({
-        category: row.category || row.cat || 'major',
+        category: normalizeCategory(row.category || row.cat || 'major'),
         subject: row.subject || row.sub || '',
-        credit: row.credit || '',
-        grade: row.grade || '',
+        credit: row.credit ?? '',
+        grade: row.grade ?? '',
       }));
     }
   } catch {
-    localStorage.removeItem(STORAGE_KEYS.score);
+    try {
+      localStorage.removeItem(STORAGE_KEYS.score);
+    } catch {
+      // ignore
+    }
   }
+
   return DEFAULT_SCORE_ROWS;
 }
 
 function renderScoreRows(rows) {
   const container = $('#scoreRows');
   container.replaceChildren();
-  rows.forEach((row) => container.appendChild(createScoreRow(row)));
+
+  const safeRows = Array.isArray(rows) && rows.length > 0 ? rows : DEFAULT_SCORE_ROWS;
+  safeRows.forEach((row) => container.appendChild(createScoreRow(row)));
 }
 
-function addScoreRow(rowData = {}) {
+function addScoreRow(options = {}) {
+  const rowData = options && !('skipSave' in options) ? options : {};
   $('#scoreRows').appendChild(createScoreRow(rowData));
-  saveScoreRows();
+
+  if (!options.skipSave) {
+    saveScoreRows();
+    calculateGpa({ silent: true });
+  }
 }
 
 function calculateGpa({ silent = false } = {}) {
@@ -266,23 +342,33 @@ function calculateGpa({ silent = false } = {}) {
   };
 
   let hasInvalidRow = false;
+  let validRowCount = 0;
 
   getScoreRows().forEach(({ category, credit, grade }) => {
-    if (credit === '' && grade === '') return;
+    const hasAnyNumericInput = credit !== '' || grade !== '';
+    if (!hasAnyNumericInput) return;
 
     const parsedCredit = toFiniteNumber(credit);
     const parsedGrade = toFiniteNumber(grade);
+    const normalizedCategory = normalizeCategory(category);
 
-    if (parsedCredit === null || parsedGrade === null || parsedCredit < 0 || parsedGrade < 0 || parsedGrade > 4.5) {
+    if (
+      parsedCredit === null ||
+      parsedGrade === null ||
+      parsedCredit < 0 ||
+      parsedGrade < 0 ||
+      parsedGrade > 4.5
+    ) {
       hasInvalidRow = true;
       return;
     }
 
-    totals[category].credits += parsedCredit;
-    totals[category].points += parsedCredit * parsedGrade;
+    totals[normalizedCategory].credits += parsedCredit;
+    totals[normalizedCategory].points += parsedCredit * parsedGrade;
+    validRowCount += 1;
   });
 
-  const gpa = (bucket) => bucket.credits > 0 ? bucket.points / bucket.credits : null;
+  const gpa = (bucket) => (bucket.credits > 0 ? bucket.points / bucket.credits : null);
   const totalCredits = totals.major.credits + totals.double.credits + totals.liberal.credits;
   const totalPoints = totals.major.points + totals.double.points + totals.liberal.points;
 
@@ -291,25 +377,33 @@ function calculateGpa({ silent = false } = {}) {
   $('#liberalGpa').textContent = gpa(totals.liberal) === null ? '-' : formatNumber(gpa(totals.liberal));
   $('#overallGpa').textContent = totalCredits > 0 ? formatNumber(totalPoints / totalCredits) : '-';
 
-  if (hasInvalidRow && !silent) {
-    window.alert('학점은 0 이상, 등급은 0.0 이상 4.5 이하로 입력해 주세요.');
+  if (hasInvalidRow) {
+    setScoreMessage('학점은 0 이상, 등급은 0.0 이상 4.5 이하로 입력해 주세요.', true);
+    return;
+  }
+
+  if (!silent) {
+    setScoreMessage(validRowCount > 0 ? '평균 학점 계산이 완료되었습니다.' : '계산할 과목 정보를 입력해 주세요.');
+  } else if (!hasInvalidRow) {
+    setScoreMessage('');
   }
 }
 
 function clearScoreData() {
-  localStorage.removeItem(STORAGE_KEYS.score);
-  localStorage.removeItem(STORAGE_KEYS.legacyScore);
+  try {
+    localStorage.removeItem(STORAGE_KEYS.score);
+    localStorage.removeItem(STORAGE_KEYS.legacyScore);
+  } catch {
+    // ignore
+  }
+
   renderScoreRows(DEFAULT_SCORE_ROWS);
   calculateGpa({ silent: true });
   saveScoreRows();
+  setScoreMessage('입력값을 초기화했습니다.');
 }
 
-function init() {
-  loadRankData();
-  renderScoreRows(parseSavedScoreRows());
-  calculateGpa({ silent: true });
-  saveScoreRows();
-
+function bindEvents() {
   $('#rankForm').addEventListener('submit', handleRankSubmit);
   $('#clearRankButton').addEventListener('click', clearRankData);
   $('#addSubjectButton').addEventListener('click', () => addScoreRow());
@@ -319,6 +413,23 @@ function init() {
   ['#score', '#average', '#standardDeviation', '#totalStudents'].forEach((selector) => {
     $(selector).addEventListener('input', saveRankData);
   });
+
+  $$('[data-route]').forEach((link) => {
+    link.addEventListener('click', () => {
+      window.setTimeout(() => applyRoute({ shouldScroll: true }), 0);
+    });
+  });
+
+  window.addEventListener('hashchange', () => applyRoute({ shouldScroll: true }));
+}
+
+function init() {
+  loadRankData();
+  renderScoreRows(parseSavedScoreRows());
+  calculateGpa({ silent: true });
+  saveScoreRows();
+  bindEvents();
+  applyRoute({ shouldScroll: false });
 }
 
 document.addEventListener('DOMContentLoaded', init);
