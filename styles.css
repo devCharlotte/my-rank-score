@@ -183,14 +183,6 @@ button:hover {
   font-size: 0.8rem;
 }
 
-.view-section {
-  display: none;
-  scroll-margin-top: 18px;
-}
-
-.view-section.is-active {
-  display: block;
-}
 
 .tool-card {
   padding: 22px;
@@ -428,4 +420,28 @@ select:focus {
   .icon-button {
     width: 100%;
   }
+}
+
+.page-section {
+  scroll-margin-top: 18px;
+}
+
+.soft-button.is-current {
+  background: linear-gradient(135deg, var(--my-blue), #69c8ff) !important;
+  color: #fff !important;
+  box-shadow: 0 12px 26px rgba(105, 200, 255, 0.25) !important;
+}
+
+.hero-actions .soft-button {
+  min-width: 156px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.side-note {
+  min-height: 100%;
+}
+
+.side-note .value {
+  margin: auto 0;
 }

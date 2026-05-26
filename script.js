@@ -52,7 +52,9 @@ function normalCdf(zScore) {
 }
 
 function setResultMessage(element, message, isError = false) {
+  if (!element) return;
   element.replaceChildren();
+
   const wrapper = document.createElement('div');
   wrapper.className = isError ? 'error-text' : '';
   wrapper.textContent = message;
@@ -62,40 +64,15 @@ function setResultMessage(element, message, isError = false) {
 function setScoreMessage(message = '', isError = false) {
   const messageBox = $('#scoreMessage');
   if (!messageBox) return;
+
   messageBox.className = isError ? 'score-message error-text' : 'score-message';
   messageBox.textContent = message;
 }
 
-function setActiveRoute(route) {
-  const normalizedRoute = route === 'score' ? 'score' : 'rank';
-
-  $$('[data-view]').forEach((section) => {
-    section.classList.toggle('is-active', section.dataset.view === normalizedRoute);
-  });
-
-  $$('[data-route]').forEach((link) => {
-    link.classList.toggle('is-selected', link.dataset.route === normalizedRoute);
-  });
-}
-
-function routeFromHash() {
-  const hash = window.location.hash.replace('#', '').trim().toLowerCase();
-  if (hash === 'score' || hash === 'score-calculator' || hash === 'my-score') return 'score';
-  return 'rank';
-}
-
-function applyRoute({ shouldScroll = false } = {}) {
-  const route = routeFromHash();
-  setActiveRoute(route);
-
-  if (shouldScroll) {
-    const target = route === 'score' ? $('#score-calculator') : $('#rank');
-    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-}
-
 function renderRankResult({ score, average, standardDeviation, totalStudents }) {
   const result = $('#rankResult');
+  if (!result) return;
+
   const zScore = (score - average) / standardDeviation;
   const percentile = clamp(normalCdf(zScore), 0, 1);
   const estimatedRank = clamp(Math.ceil(totalStudents * (1 - percentile)), 1, totalStudents);
@@ -138,10 +115,16 @@ function loadRankData() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.rank) || 'null');
     if (!saved) return;
-    $('#score').value = saved.score ?? '';
-    $('#average').value = saved.average ?? '';
-    $('#standardDeviation').value = saved.standardDeviation ?? '';
-    $('#totalStudents').value = saved.totalStudents ?? '';
+
+    const score = $('#score');
+    const average = $('#average');
+    const standardDeviation = $('#standardDeviation');
+    const totalStudents = $('#totalStudents');
+
+    if (score) score.value = saved.score ?? '';
+    if (average) average.value = saved.average ?? '';
+    if (standardDeviation) standardDeviation.value = saved.standardDeviation ?? '';
+    if (totalStudents) totalStudents.value = saved.totalStudents ?? '';
   } catch {
     localStorage.removeItem(STORAGE_KEYS.rank);
   }
@@ -151,10 +134,10 @@ function handleRankSubmit(event) {
   event.preventDefault();
 
   const result = $('#rankResult');
-  const score = toFiniteNumber($('#score').value);
-  const average = toFiniteNumber($('#average').value);
-  const standardDeviation = toFiniteNumber($('#standardDeviation').value);
-  const totalStudents = Number.parseInt($('#totalStudents').value, 10);
+  const score = toFiniteNumber($('#score')?.value);
+  const average = toFiniteNumber($('#average')?.value);
+  const standardDeviation = toFiniteNumber($('#standardDeviation')?.value);
+  const totalStudents = Number.parseInt($('#totalStudents')?.value, 10);
 
   if (score === null || average === null || standardDeviation === null || !Number.isInteger(totalStudents)) {
     setResultMessage(result, '모든 값을 숫자로 입력해 주세요.', true);
@@ -176,12 +159,14 @@ function handleRankSubmit(event) {
 }
 
 function clearRankData() {
-  $('#rankForm').reset();
+  $('#rankForm')?.reset();
+
   try {
     localStorage.removeItem(STORAGE_KEYS.rank);
   } catch {
     // ignore
   }
+
   setResultMessage($('#rankResult'), '값을 입력하면 예상 석차가 여기에 표시됩니다.');
 }
 
@@ -199,9 +184,11 @@ function createInput({ type, className, placeholder, value, min, max, step }) {
   input.className = className;
   input.placeholder = placeholder;
   input.value = value ?? '';
+
   if (min !== undefined) input.min = min;
   if (max !== undefined) input.max = max;
   if (step !== undefined) input.step = step;
+
   return input;
 }
 
@@ -216,6 +203,7 @@ function createScoreRow(rowData = {}) {
   row.className = 'score-row';
 
   const selectedCategory = normalizeCategory(rowData.category || rowData.cat || 'major');
+
   const category = document.createElement('select');
   category.className = 'category';
   CATEGORY_OPTIONS.forEach(({ value, label }) => {
@@ -256,7 +244,11 @@ function createScoreRow(rowData = {}) {
   removeButton.textContent = '×';
   removeButton.addEventListener('click', () => {
     row.remove();
-    if (!$('#scoreRows').children.length) addScoreRow({ skipSave: true });
+
+    if (!$('#scoreRows')?.children.length) {
+      addScoreRow({ skipSave: true });
+    }
+
     saveScoreRows();
     calculateGpa({ silent: true });
   });
@@ -284,6 +276,8 @@ function getScoreRows() {
 }
 
 function saveScoreRows() {
+  if (!$('#scoreRows')) return;
+
   try {
     localStorage.setItem(STORAGE_KEYS.score, JSON.stringify(getScoreRows()));
   } catch {
@@ -318,6 +312,8 @@ function parseSavedScoreRows() {
 
 function renderScoreRows(rows) {
   const container = $('#scoreRows');
+  if (!container) return;
+
   container.replaceChildren();
 
   const safeRows = Array.isArray(rows) && rows.length > 0 ? rows : DEFAULT_SCORE_ROWS;
@@ -325,8 +321,11 @@ function renderScoreRows(rows) {
 }
 
 function addScoreRow(options = {}) {
+  const container = $('#scoreRows');
+  if (!container) return;
+
   const rowData = options && !('skipSave' in options) ? options : {};
-  $('#scoreRows').appendChild(createScoreRow(rowData));
+  container.appendChild(createScoreRow(rowData));
 
   if (!options.skipSave) {
     saveScoreRows();
@@ -334,7 +333,14 @@ function addScoreRow(options = {}) {
   }
 }
 
+function setGpaText(selector, value) {
+  const target = $(selector);
+  if (target) target.textContent = value;
+}
+
 function calculateGpa({ silent = false } = {}) {
+  if (!$('#scoreRows')) return;
+
   const totals = {
     major: { credits: 0, points: 0 },
     double: { credits: 0, points: 0 },
@@ -372,10 +378,10 @@ function calculateGpa({ silent = false } = {}) {
   const totalCredits = totals.major.credits + totals.double.credits + totals.liberal.credits;
   const totalPoints = totals.major.points + totals.double.points + totals.liberal.points;
 
-  $('#majorGpa').textContent = gpa(totals.major) === null ? '-' : formatNumber(gpa(totals.major));
-  $('#doubleMajorGpa').textContent = gpa(totals.double) === null ? '-' : formatNumber(gpa(totals.double));
-  $('#liberalGpa').textContent = gpa(totals.liberal) === null ? '-' : formatNumber(gpa(totals.liberal));
-  $('#overallGpa').textContent = totalCredits > 0 ? formatNumber(totalPoints / totalCredits) : '-';
+  setGpaText('#majorGpa', gpa(totals.major) === null ? '-' : formatNumber(gpa(totals.major)));
+  setGpaText('#doubleMajorGpa', gpa(totals.double) === null ? '-' : formatNumber(gpa(totals.double)));
+  setGpaText('#liberalGpa', gpa(totals.liberal) === null ? '-' : formatNumber(gpa(totals.liberal)));
+  setGpaText('#overallGpa', totalCredits > 0 ? formatNumber(totalPoints / totalCredits) : '-');
 
   if (hasInvalidRow) {
     setScoreMessage('학점은 0 이상, 등급은 0.0 이상 4.5 이하로 입력해 주세요.', true);
@@ -384,7 +390,7 @@ function calculateGpa({ silent = false } = {}) {
 
   if (!silent) {
     setScoreMessage(validRowCount > 0 ? '평균 학점 계산이 완료되었습니다.' : '계산할 과목 정보를 입력해 주세요.');
-  } else if (!hasInvalidRow) {
+  } else {
     setScoreMessage('');
   }
 }
@@ -403,33 +409,37 @@ function clearScoreData() {
   setScoreMessage('입력값을 초기화했습니다.');
 }
 
-function bindEvents() {
-  $('#rankForm').addEventListener('submit', handleRankSubmit);
-  $('#clearRankButton').addEventListener('click', clearRankData);
-  $('#addSubjectButton').addEventListener('click', () => addScoreRow());
-  $('#calculateScoreButton').addEventListener('click', () => calculateGpa());
-  $('#clearScoreButton').addEventListener('click', clearScoreData);
+function bindRankEvents() {
+  const rankForm = $('#rankForm');
+  if (!rankForm) return;
+
+  rankForm.addEventListener('submit', handleRankSubmit);
+  $('#clearRankButton')?.addEventListener('click', clearRankData);
 
   ['#score', '#average', '#standardDeviation', '#totalStudents'].forEach((selector) => {
-    $(selector).addEventListener('input', saveRankData);
+    $(selector)?.addEventListener('input', saveRankData);
   });
+}
 
-  $$('[data-route]').forEach((link) => {
-    link.addEventListener('click', () => {
-      window.setTimeout(() => applyRoute({ shouldScroll: true }), 0);
-    });
-  });
+function bindScoreEvents() {
+  if (!$('#scoreRows')) return;
 
-  window.addEventListener('hashchange', () => applyRoute({ shouldScroll: true }));
+  $('#addSubjectButton')?.addEventListener('click', () => addScoreRow());
+  $('#calculateScoreButton')?.addEventListener('click', () => calculateGpa());
+  $('#clearScoreButton')?.addEventListener('click', clearScoreData);
 }
 
 function init() {
   loadRankData();
-  renderScoreRows(parseSavedScoreRows());
-  calculateGpa({ silent: true });
-  saveScoreRows();
-  bindEvents();
-  applyRoute({ shouldScroll: false });
+
+  if ($('#scoreRows')) {
+    renderScoreRows(parseSavedScoreRows());
+    calculateGpa({ silent: true });
+    saveScoreRows();
+  }
+
+  bindRankEvents();
+  bindScoreEvents();
 }
 
 document.addEventListener('DOMContentLoaded', init);

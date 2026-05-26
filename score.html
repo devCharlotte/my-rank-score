@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="My Score GPA Calculator" />
+  <title>My Score</title>
+  <link rel="stylesheet" href="shared.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="mygame-soft" data-page="score">
+  <nav class="mygame-topnav" aria-label="page navigation">
+    <a class="mygame-home" href="./index.html">← my calculator</a>
+    <span class="mygame-date" aria-hidden="true">&nbsp;</span>
+  </nav>
+
+  <main class="mygame-page calculator-page">
+    <section class="hero" aria-labelledby="page-title">
+      <div class="mygame-card hero-main">
+        <div class="eyebrow">my calculator</div>
+        <h1 id="page-title">my calculator</h1>
+        <p class="subtitle">석차 계산기랑 학점 계산기 !</p>
+        <div class="hero-actions" aria-label="calculator shortcuts">
+          <a class="soft-button secondary" href="./index.html">Rank Calculator</a>
+          <a class="soft-button is-current" href="./score.html" aria-current="page">My Score</a>
+        </div>
+      </div>
+
+      <aside class="mygame-card side-note">
+        <div class="value">석차 계산기랑<br>학점 계산기 !</div>
+      </aside>
+    </section>
+
+    <section class="calculator-grid" aria-label="calculator list">
+      <a class="mygame-card calculator-link" href="./index.html">
+        <div>
+          <div class="icon">🏆</div>
+          <h2 class="calculator-title">My Rank Calculator</h2>
+          <p class="calculator-desc">원점수, 평균, 표준편차, 학생 수를 이용해 예상 석차를 계산합니다.</p>
+        </div>
+        <div class="created">Created Dec 31, 2024</div>
+      </a>
+
+      <a class="mygame-card calculator-link is-selected" href="./score.html" aria-current="page">
+        <div>
+          <div class="icon">📚</div>
+          <h2 class="calculator-title">My Score</h2>
+          <p class="calculator-desc">과목별 이수학점과 등급을 입력해 전공별 평균 학점과 종합 GPA를 계산합니다.</p>
+        </div>
+        <div class="created">Created Mar 21, 2025</div>
+      </a>
+    </section>
+
+    <section id="score-calculator" class="page-section" aria-labelledby="score-title">
+      <article class="mygame-card tool-card score-card">
+        <header class="tool-header">
+          <div>
+            <div class="icon">📚</div>
+            <h2 id="score-title">My Score</h2>
+            <p>과목별 이수학점과 등급을 입력하면 주전공, 복수전공, 교양, 종합 평균 학점을 계산합니다.</p>
+          </div>
+          <div class="created">Created Mar 21, 2025</div>
+        </header>
+
+        <div class="score-table-wrap" aria-label="subject score table">
+          <div class="score-table-head" aria-hidden="true">
+            <span>구분</span>
+            <span>과목명</span>
+            <span>학점</span>
+            <span>등급</span>
+            <span>삭제</span>
+          </div>
+          <div id="scoreRows" class="score-rows"></div>
+        </div>
+
+        <div class="button-row score-buttons">
+          <button type="button" id="addSubjectButton">과목 추가</button>
+          <button type="button" id="calculateScoreButton">평균 학점 계산</button>
+          <button class="reset-btn" type="button" id="clearScoreButton">전체 초기화</button>
+        </div>
+
+        <div class="gpa-grid" aria-live="polite">
+          <div class="gpa-item">
+            <span class="gpa-label">주전공</span>
+            <strong id="majorGpa">-</strong>
+          </div>
+          <div class="gpa-item">
+            <span class="gpa-label">복수전공</span>
+            <strong id="doubleMajorGpa">-</strong>
+          </div>
+          <div class="gpa-item">
+            <span class="gpa-label">교양</span>
+            <strong id="liberalGpa">-</strong>
+          </div>
+          <div class="gpa-item total">
+            <span class="gpa-label">종합</span>
+            <strong id="overallGpa">-</strong>
+          </div>
+        </div>
+
+        <div id="scoreMessage" class="score-message" aria-live="polite"></div>
+      </article>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
